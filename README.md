@@ -34,7 +34,27 @@ The system is intentionally designed to support learning, not shortcut it.
 - **Learning-first constraints**: The assistant is prevented from outputting full corrected code.
 - **Structured responses**: Explanations, hints, and reflection prompts follow a predictable format.
 - **Pedagogical focus**: Responses are designed using educational principles (guided discovery, error-based learning).
-- **Responsible AI design**: The system discourages misuse in academic settings.
+- **Responsible AI enforcement**: Unsafe or misuse-prone requests are detected and handled at the system level.
+
+---
+
+## Microsoft AI Services Used (Requirement Compliance)
+
+This project **requires multiple Microsoft AI services to operate**:
+
+### 1. Azure OpenAI Service
+Used as the core reasoning engine to:
+- Analyze student-submitted code
+- Generate explanations and guided debugging hints
+- Follow system-level learning constraints and structured output rules
+
+### 2. Azure AI Content Safety
+Used to:
+- Detect academic misuse (e.g., requests for full solutions)
+- Identify unsafe or policy-violating prompts
+- Enforce refusal and redirection behaviors when necessary
+
+Together, these services ensure the assistant is both **effective and responsibly constrained**.
 
 ---
 
@@ -43,8 +63,9 @@ The system is intentionally designed to support learning, not shortcut it.
 
 Current focus:
 - Designing and iterating constrained system prompts
-- Comparing behavior against ChatGPT
-- Validating the need with real student feedback
+- Comparing Azure OpenAI behavior against ChatGPT
+- Validating learning effectiveness and student trust
+- Testing Content Safety filtering for misuse prevention
 
 No frontend or backend implementation yet.
 
@@ -52,8 +73,8 @@ No frontend or backend implementation yet.
 
 ## Prompt Design
 Prompt templates are stored in the `prompts/` directory and include:
-- Debugging mode (explanation + hints)
-- Assignment help mode (refusal + redirection)
+- Debugging mode (explanation + guided hints)
+- Assignment help mode (refusal + learning redirection)
 
 These prompts enforce strict behavioral rules to ensure consistent learning-oriented responses.
 
@@ -62,9 +83,10 @@ These prompts enforce strict behavioral rules to ensure consistent learning-orie
 ## Validation
 Early validation includes:
 - Prompt behavior comparisons with ChatGPT
-- User feedback from CS students regarding learning needs and academic integrity concerns
+- Student feedback on learning effectiveness
+- Testing misuse detection via Azure AI Content Safety
 
-Find prompt comparison notes in the `validation/` directory.
+Find validation notes in the `validation/` directory.
 
 ---
 
@@ -75,17 +97,19 @@ Find prompt comparison notes in the `validation/` directory.
 
 ---
 
-## Tech Stack (Planned)
+## Tech Stack
 - Frontend: React + TypeScript
 - Backend: Node.js + TypeScript
-- AI: Azure OpenAI / OpenAI API
+- AI Services:
+  - Azure OpenAI Service
+  - Azure AI Content Safety
 - Deployment: Azure App Service
 
 ---
 
 ## Ethical & Responsible AI Considerations
-This project is built with responsible AI principles in mind:
-- Prevents academic misuse
+This project follows Microsoft Responsible AI principles:
+- Prevents academic misuse through automated content filtering
 - Encourages understanding over automation
-- Maintains transparency in AI behavior
-
+- Maintains transparency in AI behavior and limitations
+- Applies safeguards at both prompt and service levels
