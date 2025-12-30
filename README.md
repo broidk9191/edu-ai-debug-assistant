@@ -1,6 +1,7 @@
 # Learning-First AI Debug Assistant
 
 ## Overview
+
 The Learning-First AI Debug Assistant is an education-focused AI tool designed to help students understand programming errors without directly providing full solutions. Unlike general-purpose AI tools, this system enforces learning-oriented constraints to promote critical thinking and maintain academic integrity.
 
 The project targets introductory computer science students who want help debugging their code while still learning how and why errors occur.
@@ -8,10 +9,12 @@ The project targets introductory computer science students who want help debuggi
 ---
 
 ## Problem Statement
+
 Many students use general-purpose AI tools for debugging, but these tools often:
-- Provide complete solutions
-- Encourage copy-paste behavior
-- Undermine learning and academic integrity
+
+- Provide complete solutions  
+- Encourage copy-paste behavior  
+- Undermine learning and academic integrity  
 
 Educators, meanwhile, struggle to balance AI accessibility with responsible use.
 
@@ -20,96 +23,110 @@ This project aims to bridge that gap.
 ---
 
 ## Solution
-This project introduces a **constrained AI debugging assistant** that:
-- Explains *why* a bug occurs instead of fixing it outright
-- Provides guided hints rather than full answers
-- Uses reflective questions to encourage student reasoning
-- Refuses requests for complete solutions
+
+This project introduces a constrained AI debugging assistant that:
+
+- Explains why a bug occurs instead of fixing it outright  
+- Provides guided hints rather than full answers  
+- Uses reflective questions to encourage student reasoning  
+- Refuses requests for complete solutions  
 
 The system is intentionally designed to support learning, not shortcut it.
 
 ---
 
 ## Key Differentiators from ChatGPT
-- **Learning-first constraints**: The assistant is prevented from outputting full corrected code.
-- **Structured responses**: Explanations, hints, and reflection prompts follow a predictable format.
-- **Pedagogical focus**: Responses are designed using educational principles (guided discovery, error-based learning).
-- **Responsible AI enforcement**: Unsafe or misuse-prone requests are detected and handled at the system level.
+
+- **Learning-first constraints:** Prevents full corrected code output.  
+- **Structured responses:** Hints + reflection questions instead of answers.  
+- **Pedagogical focus:** Encourages reasoning and debugging skills.  
+- **Responsible AI enforcement:** Academic misuse detection built in.  
 
 ---
 
 ## Microsoft AI Services Used (Requirement Compliance)
 
-This project **requires multiple Microsoft AI services to operate**:
+This project requires and integrates two Microsoft AI services:
 
 ### 1. Azure OpenAI Service
-Used as the core reasoning engine to:
-- Analyze student-submitted code
-- Generate explanations and guided debugging hints
-- Follow system-level learning constraints and structured output rules
+Used as the reasoning engine for:
+- Code understanding  
+- Error explanation  
+- Guided debugging output  
 
 ### 2. Azure AI Content Safety
-Used to:
-- Detect academic misuse (e.g., requests for full solutions)
-- Identify unsafe or policy-violating prompts
-- Enforce refusal and redirection behaviors when necessary
+Used for:
+- Academic misuse detection  
+- Refusal logic + redirection triggers  
+- Safety filtering for responsible AI use  
 
-Together, these services ensure the assistant is both **effective and responsibly constrained**.
+These combined services enable a safe, learning-first debugging assistant.
 
 ---
 
-## Current Project Phase
-**Phase 1: Prompt Design & Idea Validation**
+## Project Status
+
+### **Phase 1 — Prompt Design & Validation ✔ Completed**
+
+Achievements:  
+- Debug Prompt v1 + Assignment Help Prompt v1 complete  
+- Prompt behavior validated against ChatGPT baseline  
+- Academic misuse refusal behavior tested  
+- Documentation + repo structure initialized  
+
+Results stored in:  
+`/prompts/` + `/validation/`
+
+---
+
+### **Phase 2 — MVP Implementation, Now in progress**
 
 Current focus:
-- Designing and iterating constrained system prompts
-- Comparing Azure OpenAI behavior against ChatGPT
-- Validating learning effectiveness and student trust
-- Testing Content Safety filtering for misuse prevention
 
-No frontend or backend implementation yet.
+- Building minimal functional prototype using Azure OpenAI API  
+- Backend → Node.js + TypeScript with prompt routing (debug vs assignment mode)  
+- Frontend → React + TypeScript UI for code submission + responses  
+- Integrating Azure AI Content Safety into request flow  
+- Connecting user input → API → structured response output  
 
----
+#### Deliverables for Phase 2:
 
-## Prompt Design
-Prompt templates are stored in the `prompts/` directory and include:
-- Debugging mode (explanation + guided hints)
-- Assignment help mode (refusal + learning redirection)
-
-These prompts enforce strict behavioral rules to ensure consistent learning-oriented responses.
-
----
-
-## Validation
-Early validation includes:
-- Prompt behavior comparisons with ChatGPT
-- Student feedback on learning effectiveness
-- Testing misuse detection via Azure AI Content Safety
-
-Find validation notes in the `validation/` directory.
+| Component | Expected Output |
+|----------|----------------|
+| Backend API | `/api/debug` & `/api/assignment` endpoints |
+| Azure Integration | Calls to OpenAI + Content Safety evaluation |
+| Frontend UI | Code input box, response panel, "mode notifiers" |
+| Logging | Safety decisions + hint level metadata tracking |
 
 ---
 
-## Planned Next Steps
-- Phase 2: MVP implementation (frontend + backend)
-- Phase 3: User testing and iteration
-- Phase 4: Deployment and Imagine Cup submission
+## Planned Roadmap
+
+- Phase 3: User testing + iteration with CS students  
+- Phase 4: Deployment + Imagine Cup submission build  
+- Phase 5: Analytics, feedback loops, reflection metrics  
 
 ---
+
+## Repository Structure
+/prompts → system prompt files (debug + assignment)
+/validation → prompt comparison + Phase 1 test results
+/backend (planned) → Phase 2 server + OpenAI integration
+/frontend (planned) → React+TS UI
+/docs → proposal, planning, architecture notes
 
 ## Tech Stack
-- Frontend: React + TypeScript
-- Backend: Node.js + TypeScript
-- AI Services:
-  - Azure OpenAI Service
-  - Azure AI Content Safety
-- Deployment: Azure App Service
+
+- React + TypeScript (frontend)  
+- Node.js + TypeScript (backend)  
+- Azure OpenAI + Azure AI Content Safety  
+- Deployment planned on Azure App Service  
 
 ---
 
 ## Ethical & Responsible AI Considerations
-This project follows Microsoft Responsible AI principles:
-- Prevents academic misuse through automated content filtering
-- Encourages understanding over automation
-- Maintains transparency in AI behavior and limitations
-- Applies safeguards at both prompt and service levels
+
+- Prevents answer dumping & plagiarism  
+- Focuses on education and comprehension  
+- Transparent refusal logic  
+- Safety checks via Content Safety API  
