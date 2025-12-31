@@ -1,0 +1,39 @@
+# Environment
+.env
+.env.*
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build
+dist/
+build/
+
+# Test outputs and temporary data
+test_outputs/
+*.test-output
+*.log
+
+# Frontend example and helper scripts
+frontend_example/
+scripts/
+scripts/*.ts
+scripts/*.js
+scripts/*.log
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# TypeScript / ts-node
+.tsbuildinfo
+
+# Misc
+.cache/
+coverage/
+

@@ -62,6 +62,11 @@ Used for:
 
 These combined services enable a safe, learning-first debugging assistant.
 
+### 3. Microsoft Foundry
+Used for:
+- Experimenting with alternative model backends and private models during research.
+- Routing requests for telemetry, model comparison, and governance in experimental runs.
+
 ---
 
 ## Project Status
