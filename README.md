@@ -277,4 +277,12 @@ See individual README files in `/backend` and `/frontend` for detailed deploymen
 - ✅ Transparent refusal logic  
 - ✅ Safety checks via Content Safety API  
 - ✅ Rate limiting to prevent abuse
-- ✅ Academic misuse detection  
+- ✅ Academic misuse detection
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2024 Learning-First AI Debug Assistant  
