@@ -19,6 +19,15 @@ Create a `.env` file in the `backend` directory with the following variables:
 ```env
 # Server Configuration
 PORT=3000
+HOST=0.0.0.0
+
+# CORS Configuration (comma-separated list of allowed origins)
+# For production, set to your frontend domain(s)
+# Example: ALLOWED_ORIGINS=https://learning-first.ai,https://www.learning-first.ai
+ALLOWED_ORIGINS=http://localhost:3001,http://localhost:5173
+
+# Production mode (hides detailed error messages)
+NODE_ENV=development
 
 # Azure OpenAI Configuration
 AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
@@ -42,6 +51,12 @@ The server validates all required environment variables on startup. If any are m
 - `AZURE_CONTENT_SAFETY_ENDPOINT` - Your Azure AI Content Safety endpoint URL
 - `AZURE_CONTENT_SAFETY_API_KEY` - Your Azure AI Content Safety API key
 
+**Optional Variables:**
+- `PORT` - Server port (default: 3000)
+- `HOST` - Server host (default: 0.0.0.0)
+- `ALLOWED_ORIGINS` - Comma-separated list of CORS allowed origins
+- `NODE_ENV` - Set to `production` to hide detailed error messages
+
 ### 4. Run the Server
 
 Development mode (with hot reload):
@@ -57,13 +72,38 @@ npm start
 
 **Note:** The server will not start if Azure AI Content Safety is not properly configured, as it is a required component for academic integrity enforcement.
 
+## Security Features
+
+### Rate Limiting
+- **20 requests per minute per IP** to prevent abuse
+- Returns 429 status with retry guidance when exceeded
+
+### CORS Protection
+- Only allows requests from configured origins
+- Set `ALLOWED_ORIGINS` environment variable for production
+
+### Request Size Limits
+- Maximum request body size: 1MB
+- Prevents large payload attacks
+
 ## API Endpoints
 
 ### POST `/api/debug`
 
-Debug code and get learning-focused hints.
+Debug code and get learning-focused hints. Supports conversational history.
 
 **Request Body:**
+```json
+{
+  "message": "string - Current user message",
+  "history": [
+    { "role": "user", "content": "previous message" },
+    { "role": "assistant", "content": "previous response" }
+  ]
+}
+```
+
+**Legacy format (also supported):**
 ```json
 {
   "code": "string (optional)",
@@ -80,8 +120,7 @@ Debug code and get learning-focused hints.
   "metadata": {
     "safety_decision": "allow" | "refuse" | "review_required",
     "diagnosis_confidence": "low" | "medium" | "high",
-    "hint_level": 1 | 2 | 3,
-    "lines_referenced": [1, 2, 3]
+    "hint_level": 1 | 2 | 3
   }
 }
 ```
@@ -108,6 +147,10 @@ Get assignment help (conceptual guidance, no code solutions).
 }
 ```
 
+### GET `/`
+
+Health check endpoint (not rate limited).
+
 ## Architecture
 
 - **Routes** (`src/routes/`): Express route handlers for API endpoints
@@ -121,13 +164,18 @@ Get assignment help (conceptual guidance, no code solutions).
 - ✅ Azure OpenAI integration for AI responses
 - ✅ Azure AI Content Safety for misuse detection
 - ✅ Academic integrity enforcement
-- ✅ Structured response format per prompt specifications
+- ✅ Conversational memory (multi-turn chat)
+- ✅ Rate limiting (20 req/min per IP)
+- ✅ CORS protection
+- ✅ Request size limits
 - ✅ Safety decision logging for audit
 
-## Notes
+## Deployment
 
-- **Azure AI Content Safety is REQUIRED** - The server will not start without proper Content Safety configuration
-- Prompts are loaded from `../prompts/` directory at runtime
-- All responses follow the structured format defined in the prompt files
-- Environment variables are validated on server startup
+### Production Checklist
 
+1. Set `NODE_ENV=production`
+2. Configure `ALLOWED_ORIGINS` with your frontend domain(s)
+3. Set all Azure API keys securely (use platform secrets, not `.env` files)
+4. Ensure HTTPS is enabled on your hosting platform
+5. Consider adding a reverse proxy (nginx) for additional security

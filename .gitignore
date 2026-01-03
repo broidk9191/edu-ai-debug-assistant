@@ -8,23 +8,46 @@ dist/
 build/
 frontend/dist/
 backend/dist/
+*.tsbuildinfo
+.tsbuildinfo
 
-# Environment variables
+# Environment variables (exclude all except examples)
 .env
-.env.*
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+.env.production
+.env.development
+.env.test
 frontend/.env
+frontend/.env.*
 backend/.env
+backend/.env.*
+# But allow example files (templates for setup)
+!.env.example
+!**/.env.example
+!frontend/.env.example
+!backend/.env.example
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 logs/
+*.log.*
 
 # Test outputs
+backend/frontend_example/
+backend/scripts/
 test_outputs/
 backend/test_outputs/
+coverage/
+.nyc_output/
+*.lcov
 
 # Editor / IDE
 .vscode/
@@ -32,35 +55,56 @@ backend/test_outputs/
 *.swp
 *.swo
 *~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
 
 # OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 *.DS_Store
-
-# TypeScript
-*.tsbuildinfo
-.tsbuildinfo
-
-# Coverage
-coverage/
-.nyc_output/
+desktop.ini
 
 # Cache
 .cache/
 .parcel-cache/
 .vite/
+vite.config.*.timestamp-*
+.npm/
+.eslintcache
+.stylelintcache
 
-# Lock files (optional - team preference)
-# Uncomment if you want to ignore lock files:
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
+# Secrets and keys (extra safety)
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets/
+.secrets/
+*.secret
+*.private
+
+# Azure/AWS credentials
+.azure/
+.aws/
+*.credentials
+
+# Local development
+.local/
+.localhost/
 
 # Temporary files
 *.tmp
 *.temp
-
-# Scripts and examples (if not needed in repo)
-backend/scripts/
-backend/frontend_example/
+*.bak
+*.backup
+*~

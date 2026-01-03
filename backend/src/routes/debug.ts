@@ -1,38 +1,50 @@
 import { Router, Request, Response } from "express";
 import {
   generateDebugResponse,
-  DebugRequest,
+  generateConversationalResponse,
+  ChatMessage,
 } from "../services/openai";
 import { checkContentSafety, checkAcademicMisuse } from "../services/contentSafety";
 
 const router = Router();
 
+interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 interface DebugRequestBody {
+  // Legacy single-turn fields
   code?: string;
   errorMessage?: string;
   testCase?: string;
   question?: string;
+  // New conversational fields
+  message?: string;
+  history?: ConversationMessage[];
 }
 
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { code, errorMessage, testCase, question }: DebugRequestBody = req.body;
+    const { code, errorMessage, testCase, question, message, history }: DebugRequestBody = req.body;
 
+    // Determine if this is a conversational request or legacy request
+    const isConversational = message !== undefined;
+    
+    // Get the current user input
+    const currentInput = isConversational ? message : [code, errorMessage, testCase, question].filter(Boolean).join("\n");
+    
     // Validate input
-    if (!code && !question) {
+    if (!currentInput) {
       return res.status(400).json({
-        error: "Either 'code' or 'question' must be provided",
+        error: "A message or code/question must be provided",
       });
     }
 
-    // Check content safety (required)
-    const userInput = [code, errorMessage, testCase, question]
-      .filter(Boolean)
-      .join("\n");
-
+    // Check content safety on the current input
     let safetyResult;
     try {
-      safetyResult = await checkContentSafety(userInput);
+      safetyResult = await checkContentSafety(currentInput);
     } catch (error: any) {
       console.error("Content safety check failed:", error);
       return res.status(500).json({
@@ -41,7 +53,7 @@ router.post("/", async (req: Request, res: Response) => {
       });
     }
 
-    const hasMisuse = checkAcademicMisuse(userInput);
+    const hasMisuse = checkAcademicMisuse(currentInput);
 
     // If content safety flags issues or misuse detected, return refusal
     if (!safetyResult.safe || hasMisuse) {
@@ -59,21 +71,27 @@ If you share the failing function and the error trace, I'll give a targeted hint
       });
     }
 
-    // Generate debug response
-    const request: DebugRequest = {
-      ...(code && { code }),
-      ...(errorMessage && { errorMessage }),
-      ...(testCase && { testCase }),
-      ...(question && { question }),
-    };
-
     let response;
     try {
-      response = await generateDebugResponse(request);
+      if (isConversational) {
+        // Use conversational mode with history
+        const conversationHistory: ChatMessage[] = (history || []).map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        }));
+        
+        response = await generateConversationalResponse(message!, conversationHistory);
+      } else {
+        // Legacy single-turn mode
+        response = await generateDebugResponse({
+          ...(code && { code }),
+          ...(errorMessage && { errorMessage }),
+          ...(testCase && { testCase }),
+          ...(question && { question }),
+        });
+      }
     } catch (err: any) {
       console.error('AI service error while generating debug response:', err);
-      // Return a structured fallback instead of HTTP 500 so callers (integration tests)
-      // receive a predictable JSON payload and the run doesn't fail with 500.
       return res.json({
         content: "Temporary AI service error. Please retry in a few seconds.",
         metadata: {
@@ -87,7 +105,8 @@ If you share the failing function and the error trace, I'll give a targeted hint
     // Log safety decision for audit
     console.log("Debug request processed:", {
       safety_decision: response.metadata.safety_decision,
-      has_code: !!code,
+      is_conversational: isConversational,
+      history_length: history?.length || 0,
       timestamp: new Date().toISOString(),
     });
 
@@ -102,4 +121,3 @@ If you share the failing function and the error trace, I'll give a targeted hint
 });
 
 export default router;
-

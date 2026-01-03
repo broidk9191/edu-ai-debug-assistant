@@ -1,56 +1,46 @@
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface DebugRequest {
-  code: string;
-  question?: string;
+  message: string;
+  history: ChatMessage[];
 }
 
 export interface DebugResponse {
-  summary: string;
-  rootCause: string;
-  hints: string[];
-  reflection: string[];
+  content: string;
 }
+
+// API URL configuration
+// In development: Uses Vite proxy (/api)
+// In production: Set VITE_API_URL to your backend URL (e.g., https://api.learning-first.ai)
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 /**
- * Parses the raw content string from the backend into a structured object.
- * The backend currently returns markdown with labeled sections.
+ * Removes any JSON metadata blocks from the AI response.
+ * The prompt instructs the AI to include metadata for developers,
+ * but we don't want to show it to end users.
  */
-function parseBackendResponse(data: any): DebugResponse {
-  // If the data already has the desired structure, return it
-  if (data.summary && data.rootCause) {
-    return data;
-  }
-
-  // Otherwise, we expect { content: string, metadata: ... }
-  const content = data.content || '';
+function stripMetadata(content: string): string {
+  let cleaned = content;
   
-  // Basic parsing for the markdown structure defined in debug_prompt_v1.md
-  const summaryMatch = content.match(/(?:Summary|Short one-line summary)[:\s]*([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i);
-  const rootCauseMatch = content.match(/(?:Root [Cc]ause)[:\s]*([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i);
+  // Remove markdown JSON code blocks with metadata
+  cleaned = cleaned.replace(/```json\s*\{[\s\S]*?"(?:diagnosis_confidence|safety_decision|hint_level|lines_referenced)"[\s\S]*?\}\s*```/gi, '');
   
-  // Extract hints (look for lines starting with "Hint" or bullet points under a Hints header)
-  const hintsMatch = content.match(/(?:Hints|Guided hints)[:\s]*([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i);
-  const hints = hintsMatch 
-    ? hintsMatch[1].split('\n').map(h => h.replace(/^[-*]\s*/, '').trim()).filter(h => h.length > 0)
-    : [];
-
-  // Extract reflection questions
-  const reflectionMatch = content.match(/(?:Reflection questions)[:\s]*([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i);
-  const reflection = reflectionMatch 
-    ? reflectionMatch[1].split('\n').map(r => r.replace(/^[-*]\s*/, '').trim()).filter(r => r.length > 0)
-    : [];
-
-  return {
-    summary: summaryMatch ? summaryMatch[1].trim() : (content.substring(0, 200) + '...'),
-    rootCause: rootCauseMatch ? rootCauseMatch[1].trim() : 'Refer to the detailed analysis below.',
-    hints: hints.length > 0 ? hints : ['Check the analysis for guided steps.'],
-    reflection: reflection.length > 0 ? reflection : ['How does this change your understanding of the issue?']
-  };
+  // Remove inline JSON objects with metadata keys
+  cleaned = cleaned.replace(/\{[\s\S]*?"(?:diagnosis_confidence|safety_decision|hint_level|lines_referenced)"[\s\S]*?\}/gi, '');
+  
+  // Remove any "Metadata:" or "Developer metadata:" sections
+  cleaned = cleaned.replace(/(?:Metadata|Developer metadata|Internal metadata)[:\s]*[\s\S]*?(?=\n\n|$)/gi, '');
+  
+  // Clean up extra whitespace
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
+  
+  return cleaned;
 }
 
-// Using relative path to take advantage of Vite's proxy configured in vite.config.ts
-const API_BASE_URL = '/api';
-
-export async function getDebugHints(request: DebugRequest): Promise<DebugResponse> {
+export async function sendMessage(request: DebugRequest): Promise<DebugResponse> {
   const response = await fetch(`${API_BASE_URL}/debug`, {
     method: 'POST',
     headers: {
@@ -61,9 +51,15 @@ export async function getDebugHints(request: DebugRequest): Promise<DebugRespons
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || errorData.error || 'Failed to fetch debug hints');
+    throw new Error(errorData.message || errorData.error || 'Failed to get response');
   }
 
   const data = await response.json();
-  return parseBackendResponse(data);
+  
+  // Strip any developer metadata from the response before showing to users
+  const cleanContent = stripMetadata(data.content || '');
+  
+  return {
+    content: cleanContent,
+  };
 }
