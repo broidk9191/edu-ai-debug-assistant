@@ -226,6 +226,30 @@ export async function generateDebugResponse(request: DebugRequest): Promise<Assi
 }
 
 /**
+ * Generate conversational debug response with full history.
+ * This enables multi-turn conversations where the AI remembers context.
+ */
+export async function generateConversationalResponse(
+  currentMessage: string,
+  history: ChatMessage[]
+): Promise<AssistantResponse> {
+  const promptContent = loadPrompt("debug_prompt_v1.md");
+  const systemMessage = extractSystemMessage(promptContent, "debug");
+
+  // Build the full conversation: system + history + current message
+  const messages: ChatMessage[] = [
+    { role: "system", content: systemMessage },
+    ...history.map(m => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    })),
+    { role: "user", content: currentMessage },
+  ];
+
+  return await callOpenAI(messages, "debug");
+}
+
+/**
  * Generate assignment help response
  */
 export async function generateAssignmentResponse(

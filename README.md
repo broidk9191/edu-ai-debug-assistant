@@ -30,6 +30,7 @@ This project introduces a constrained AI debugging assistant that:
 - Provides guided hints rather than full answers  
 - Uses reflective questions to encourage student reasoning  
 - Refuses requests for complete solutions  
+- Maintains conversation context for follow-up questions
 
 The system is intentionally designed to support learning, not shortcut it.
 
@@ -41,6 +42,7 @@ The system is intentionally designed to support learning, not shortcut it.
 - **Structured responses:** Hints + reflection questions instead of answers.  
 - **Pedagogical focus:** Encourages reasoning and debugging skills.  
 - **Responsible AI enforcement:** Academic misuse detection built in.  
+- **Conversational memory:** Remembers context within a session for follow-up questions.  
 
 ---
 
@@ -53,6 +55,7 @@ Used as the reasoning engine for:
 - Code understanding  
 - Error explanation  
 - Guided debugging output  
+- Multi-turn conversational responses
 
 ### 2. Azure AI Content Safety
 Used for:
@@ -84,24 +87,36 @@ Results stored in:
 
 ---
 
-### **Phase 2 — MVP Implementation, Now in progress**
+### **Phase 2 — MVP Implementation ✅ Completed**
 
-Current focus:
+**Delivered Features:**
 
-- Building minimal functional prototype using Azure OpenAI API  
-- Backend → Node.js + TypeScript with prompt routing (debug vs assignment mode)  
-- Frontend → React + TypeScript UI for code submission + responses  
-- Integrating Azure AI Content Safety into request flow  
-- Connecting user input → API → structured response output  
+✅ **Backend API** (`/backend`)
+- RESTful API with `/api/debug` and `/api/assignment` endpoints
+- Conversational mode with full chat history support
+- Azure OpenAI integration with prompt management
+- Azure AI Content Safety integration
+- Rate limiting (20 requests/minute per IP)
+- CORS protection with configurable origins
+- Request size limits (1MB max)
+- Error handling and logging
 
-#### Deliverables for Phase 2:
+✅ **Frontend UI** (`/frontend`)
+- Modern React + TypeScript chat interface
+- Dark mode design with Learning-First.ai branding
+- Unified chatbox (no separate code/question fields)
+- Conversation memory within sessions
+- Auto-resizing input
+- Loading states and error handling
+- Metadata stripping (developer info hidden from users)
+- Session management (New Chat button)
 
-| Component | Expected Output |
-|----------|----------------|
-| Backend API | `/api/debug` & `/api/assignment` endpoints |
-| Azure Integration | Calls to OpenAI + Content Safety evaluation |
-| Frontend UI | Code input box, response panel, "mode notifiers" |
-| Logging | Safety decisions + hint level metadata tracking |
+✅ **Security & Production Features**
+- Rate limiting to prevent abuse
+- CORS configuration for production deployment
+- Request size validation
+- Environment variable management
+- Production-ready error messages
 
 ---
 
@@ -113,25 +128,153 @@ Current focus:
 
 ---
 
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Azure OpenAI Service account
+- Azure AI Content Safety account
+
+### Local Development
+
+**1. Clone the repository:**
+```bash
+git clone <your-repo-url>
+cd edu-ai-debug-assistant
+```
+
+**2. Backend Setup:**
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file:
+```env
+PORT=3000
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_API_KEY=your-key
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+AZURE_CONTENT_SAFETY_ENDPOINT=https://your-resource.cognitiveservices.azure.com
+AZURE_CONTENT_SAFETY_API_KEY=your-key
+ALLOWED_ORIGINS=http://localhost:3001,http://localhost:5173
+```
+
+Start backend:
+```bash
+npm run dev
+```
+
+**3. Frontend Setup:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+**4. Open in browser:**
+Navigate to `http://localhost:3001`
+
+---
+
 ## Repository Structure
-/prompts → system prompt files (debug + assignment)
-/validation → prompt comparison + Phase 1 test results
-/backend (planned) → Phase 2 server + OpenAI integration
-/frontend (planned) → React+TS UI
-/docs → proposal, planning, architecture notes
+
+```
+edu-ai-debug-assistant/
+├── backend/              # Node.js + TypeScript API server
+│   ├── src/
+│   │   ├── routes/       # API route handlers
+│   │   └── services/     # OpenAI & Content Safety integration
+│   └── README.md         # Backend documentation
+├── frontend/             # React + TypeScript web app
+│   ├── src/
+│   │   ├── components/   # React components
+│   │   └── services/    # API client
+│   └── README.md         # Frontend documentation
+├── prompts/              # System prompts for AI
+│   ├── debug_prompt_v1.md
+│   └── assignment_help_prompt_v1.md
+├── validation/           # Phase 1 test results
+│   └── prompt_comparison.md
+└── doc/                  # Project documentation
+```
+
+---
 
 ## Tech Stack
 
-- React + TypeScript (frontend)  
-- Node.js + TypeScript (backend)  
-- Azure OpenAI + Azure AI Content Safety  
-- Deployment planned on Azure App Service  
+**Frontend:**
+- React 18 + TypeScript
+- Vite (build tool)
+- Modern CSS with dark mode
+
+**Backend:**
+- Node.js + Express + TypeScript
+- Azure OpenAI SDK
+- Azure AI Content Safety API
+- express-rate-limit (rate limiting)
+- CORS middleware
+
+**Deployment:**
+- Frontend: Vercel/Netlify/Azure Static Web Apps
+- Backend: Azure App Service/Railway/Render
+
+---
+
+## API Endpoints
+
+### POST `/api/debug`
+Conversational debug assistance with chat history.
+
+**Request:**
+```json
+{
+  "message": "Why is my loop not working?",
+  "history": [
+    { "role": "user", "content": "def find_max(arr):..." },
+    { "role": "assistant", "content": "The issue is..." }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "content": "The root cause is... [hints and reflection questions]",
+  "metadata": { "safety_decision": "allow", ... }
+}
+```
+
+### POST `/api/assignment`
+Assignment help (conceptual guidance only).
+
+See `/backend/README.md` for full API documentation.
+
+---
+
+## Deployment
+
+### Frontend
+1. Set `VITE_API_URL` environment variable to your backend URL
+2. Build: `npm run build`
+3. Deploy `dist/` folder to Vercel/Netlify/Azure Static Web Apps
+
+### Backend
+1. Set all environment variables (see `/backend/README.md`)
+2. Build: `npm run build`
+3. Deploy to Azure App Service/Railway/Render
+4. Configure `ALLOWED_ORIGINS` with your frontend domain
+
+See individual README files in `/backend` and `/frontend` for detailed deployment instructions.  
 
 ---
 
 ## Ethical & Responsible AI Considerations
 
-- Prevents answer dumping & plagiarism  
-- Focuses on education and comprehension  
-- Transparent refusal logic  
-- Safety checks via Content Safety API  
+- ✅ Prevents answer dumping & plagiarism  
+- ✅ Focuses on education and comprehension  
+- ✅ Transparent refusal logic  
+- ✅ Safety checks via Content Safety API  
+- ✅ Rate limiting to prevent abuse
+- ✅ Academic misuse detection  

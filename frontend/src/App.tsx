@@ -1,13 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import './App.css';
-import { CodeEditor } from './components/CodeEditor';
-import { DebugResult } from './components/DebugResult';
-import { getDebugHints, DebugResponse } from './services/api';
+import { sendMessage, ChatMessage as ApiChatMessage } from './services/api';
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
-  content: string | DebugResponse;
+  content: string;
   timestamp: Date;
 }
 
@@ -17,6 +15,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,30 +25,47 @@ function App() {
     scrollToBottom();
   }, [messages, loading]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+    }
+  }, [input]);
+
   const handleSubmit = async () => {
     if (!input.trim() || loading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: input.trim(),
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    const currentInput = input;
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    const currentInput = input.trim();
     setInput('');
     setLoading(true);
 
     try {
-      // Send the entire user input to the backend
-      // The backend can decide if it's code, a question, or both
-      const data = await getDebugHints({ code: currentInput, language: 'auto' } as any);
+      // Build conversation history for the backend
+      const history: ApiChatMessage[] = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      // Send the new message along with history
+      const response = await sendMessage({
+        message: currentInput,
+        history: history,
+      });
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data,
+        content: response.content,
         timestamp: new Date(),
       };
       
@@ -58,12 +74,7 @@ function App() {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: {
-          summary: "I encountered an error while analyzing your request.",
-          rootCause: err.message || "Connection failed.",
-          hints: ["Please check if the backend server is running.", "Try refreshing the page."],
-          reflection: ["What was happening right before the error?"]
-        },
+        content: `I encountered an error: ${err.message || 'Connection failed'}. Please check if the backend server is running.`,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -72,9 +83,14 @@ function App() {
     }
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    setInput('');
+  };
+
   return (
     <div className="app-layout">
-      {/* Sidebar - "The Debug Log" */}
+      {/* Sidebar */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <div className="logo">
@@ -87,27 +103,19 @@ function App() {
         </div>
         
         <nav className="sidebar-nav">
-          <button className="new-session-btn" onClick={() => {
-            setMessages([]);
-            setInput('');
-          }}>
+          <button className="new-session-btn" onClick={handleNewChat}>
             <span>+</span> New Chat
           </button>
           
-          <div className="history-section">
-            <label>Recent Sessions</label>
-            {messages.filter(m => m.role === 'assistant').slice(-5).reverse().map((m, i) => (
-              <div key={i} className="history-item">
-                <span className="dot"></span>
-                <span className="history-text">
-                  {typeof m.content === 'string' ? m.content.substring(0, 30) : (m.content as DebugResponse).summary.substring(0, 30)}...
-                </span>
+          {messages.length > 0 && (
+            <div className="current-session">
+              <div className="session-indicator">
+                <span className="session-dot"></span>
+                <span>Current Session</span>
               </div>
-            ))}
-            {messages.filter(m => m.role === 'assistant').length === 0 && (
-              <p className="empty-history">No history yet.</p>
-            )}
-          </div>
+              <p className="message-count">{messages.length} messages</p>
+            </div>
+          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -122,10 +130,10 @@ function App() {
       <main className="chat-container">
         <header className="chat-header">
           <div className="header-info">
-            <h2>Assistant</h2>
+            <h2>Learning-First.ai</h2>
           </div>
           <div className="header-badges">
-            <span className="badge secure">No-Solution Policy</span>
+            <span className="badge secure">No Full Solutions</span>
           </div>
         </header>
 
@@ -134,7 +142,7 @@ function App() {
             <div className="welcome-hero">
               <div className="hero-icon">🛡️</div>
               <h1>Learning-First.ai</h1>
-              <p>Paste your code or ask a question. I help you debug by explaining the "why", not just the "how".</p>
+              <p>I help you debug code by explaining the "why" — not giving you the answer. Paste your code, describe your bug, or ask follow-up questions.</p>
             </div>
           )}
           
@@ -144,17 +152,9 @@ function App() {
                 {msg.role === 'user' ? '👤' : '🛡️'}
               </div>
               <div className="message-content">
-                {typeof msg.content === 'string' ? (
-                  <div className="markdown-content">
-                    {msg.content.includes('```') ? (
-                      <pre className="code-block"><code>{msg.content}</code></pre>
-                    ) : (
-                      <p>{msg.content}</p>
-                    )}
-                  </div>
-                ) : (
-                  <DebugResult result={msg.content} />
-                )}
+                <div className="markdown-content">
+                  <pre className="message-text">{msg.content}</pre>
+                </div>
                 <span className="timestamp">
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
@@ -178,13 +178,15 @@ function App() {
 
         {/* Unified Chat Box */}
         <footer className="input-area">
-          <div className="input-box-container shadow-xl">
+          <div className="input-box-container">
             <div className="chat-input-wrapper">
               <textarea 
+                ref={textareaRef}
                 className="main-chat-input"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Message Learning-First.ai... (Paste code or ask questions)"
+                placeholder="Message Learning-First.ai..."
+                rows={1}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -202,7 +204,7 @@ function App() {
             </div>
             
             <div className="input-footer">
-              <p>Learning-First.ai can make mistakes. Verify important information.</p>
+              <p>All messages in this chat share the same context. Click "New Chat" to start fresh.</p>
             </div>
           </div>
         </footer>
