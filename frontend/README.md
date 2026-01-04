@@ -79,10 +79,15 @@ npm run preview
 
 ## Features
 
-- ✅ Chat interface with conversation memory
-- ✅ Dark mode UI
+- ✅ **Unified chat interface** with conversation memory
+- ✅ **Mode selector**: Toggle between Debug and Assignment modes
+- ✅ **Difficulty level selector**: Choose Beginner, Intermediate, or Advanced
+- ✅ **Enhanced UX**: Tooltips and clear explanations for modes and difficulty levels
+- ✅ Dark mode UI with Learning-First.ai branding
 - ✅ Auto-resizing input
-- ✅ Loading states
-- ✅ Error handling
+- ✅ Loading states and error handling
 - ✅ Metadata stripping (developer info hidden from users)
 - ✅ Session management (New Chat button)
+- ✅ **Mobile-responsive design**: Works seamlessly across all platforms (desktop, tablet, mobile)
+- ✅ Sidebar with session overview
+- ✅ Smooth animations and transitions
