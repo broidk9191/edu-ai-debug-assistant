@@ -13,6 +13,8 @@ interface ConversationMessage {
   content: string;
 }
 
+type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
+
 interface DebugRequestBody {
   // Legacy single-turn fields
   code?: string;
@@ -22,11 +24,12 @@ interface DebugRequestBody {
   // New conversational fields
   message?: string;
   history?: ConversationMessage[];
+  difficulty?: DifficultyLevel;
 }
 
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { code, errorMessage, testCase, question, message, history }: DebugRequestBody = req.body;
+    const { code, errorMessage, testCase, question, message, history, difficulty }: DebugRequestBody = req.body;
 
     // Determine if this is a conversational request or legacy request
     const isConversational = message !== undefined;
@@ -80,7 +83,7 @@ If you share the failing function and the error trace, I'll give a targeted hint
           content: m.content,
         }));
         
-        response = await generateConversationalResponse(message!, conversationHistory);
+        response = await generateConversationalResponse(message!, conversationHistory, difficulty || 'intermediate');
       } else {
         // Legacy single-turn mode
         response = await generateDebugResponse({

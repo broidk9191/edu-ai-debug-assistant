@@ -49,6 +49,7 @@ export interface DebugRequest {
 export interface AssignmentRequest {
   question: string;
   code?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface AssistantResponse {
@@ -231,10 +232,15 @@ export async function generateDebugResponse(request: DebugRequest): Promise<Assi
  */
 export async function generateConversationalResponse(
   currentMessage: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  difficulty: 'beginner' | 'intermediate' | 'advanced' = 'intermediate'
 ): Promise<AssistantResponse> {
   const promptContent = loadPrompt("debug_prompt_v1.md");
-  const systemMessage = extractSystemMessage(promptContent, "debug");
+  let systemMessage = extractSystemMessage(promptContent, "debug");
+  
+  // Append difficulty-specific instructions to the system message
+  const difficultyInstructions = getDifficultyInstructions(difficulty);
+  systemMessage = `${systemMessage}\n\n${difficultyInstructions}`;
 
   // Build the full conversation: system + history + current message
   const messages: ChatMessage[] = [
@@ -250,13 +256,52 @@ export async function generateConversationalResponse(
 }
 
 /**
+ * Get difficulty-specific instructions to append to the system prompt
+ */
+function getDifficultyInstructions(difficulty: 'beginner' | 'intermediate' | 'advanced'): string {
+  switch (difficulty) {
+    case 'beginner':
+      return `DIFFICULTY LEVEL: BEGINNER
+- Use very simple, non-technical language. Avoid jargon or explain every term.
+- Provide more context and background. Assume the student is learning fundamental concepts.
+- Give more explicit hints. Break down complex concepts into smaller, digestible pieces.
+- Use analogies and real-world examples whenever possible.
+- Be patient and encouraging. Repeat key concepts if needed.`;
+    
+    case 'intermediate':
+      return `DIFFICULTY LEVEL: INTERMEDIATE
+- Use standard technical terminology appropriate for students with some programming experience.
+- Provide moderate context. Assume familiarity with basic programming concepts.
+- Give balanced hints - not too explicit, not too vague. Encourage some independent thinking.
+- Reference common patterns and best practices.
+- Encourage deeper understanding of why things work.`;
+    
+    case 'advanced':
+      return `DIFFICULTY LEVEL: ADVANCED
+- Use precise technical language. Assume familiarity with advanced concepts.
+- Provide minimal context. Focus on the specific issue at hand.
+- Give subtle hints that require the student to think critically and connect concepts.
+- Reference advanced patterns, design principles, and edge cases.
+- Challenge the student to think about performance, scalability, or architectural implications when relevant.`;
+    
+    default:
+      return '';
+  }
+}
+
+/**
  * Generate assignment help response
  */
 export async function generateAssignmentResponse(
   request: AssignmentRequest
 ): Promise<AssistantResponse> {
   const promptContent = loadPrompt("assignment_help_prompt_v1.md");
-  const systemMessage = extractSystemMessage(promptContent, "assignment");
+  let systemMessage = extractSystemMessage(promptContent, "assignment");
+  
+  // Append difficulty-specific instructions to the system message
+  const difficulty = request.difficulty || 'intermediate';
+  const difficultyInstructions = getDifficultyInstructions(difficulty);
+  systemMessage = `${systemMessage}\n\n${difficultyInstructions}`;
 
   let userMessage = request.question;
   if (request.code) {
@@ -271,3 +316,31 @@ export async function generateAssignmentResponse(
   return await callOpenAI(messages, "assignment");
 }
 
+/**
+ * Generate conversational assignment response with full history.
+ * This enables multi-turn conversations where the AI remembers context.
+ */
+export async function generateConversationalAssignmentResponse(
+  currentMessage: string,
+  history: ChatMessage[],
+  difficulty: 'beginner' | 'intermediate' | 'advanced' = 'intermediate'
+): Promise<AssistantResponse> {
+  const promptContent = loadPrompt("assignment_help_prompt_v1.md");
+  let systemMessage = extractSystemMessage(promptContent, "assignment");
+  
+  // Append difficulty-specific instructions to the system message
+  const difficultyInstructions = getDifficultyInstructions(difficulty);
+  systemMessage = `${systemMessage}\n\n${difficultyInstructions}`;
+
+  // Build the full conversation: system + history + current message
+  const messages: ChatMessage[] = [
+    { role: "system", content: systemMessage },
+    ...history.map(m => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    })),
+    { role: "user", content: currentMessage },
+  ];
+
+  return await callOpenAI(messages, "assignment");
+}
