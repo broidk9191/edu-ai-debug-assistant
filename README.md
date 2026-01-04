@@ -41,8 +41,10 @@ The system is intentionally designed to support learning, not shortcut it.
 - **Learning-first constraints:** Prevents full corrected code output.  
 - **Structured responses:** Hints + reflection questions instead of answers.  
 - **Pedagogical focus:** Encourages reasoning and debugging skills.  
+- **Difficulty customization:** Adapts explanations to student's learning level (beginner/intermediate/advanced).  
+- **Mode clarity:** Explicit Debug vs Assignment modes for clear user understanding.  
 - **Responsible AI enforcement:** Academic misuse detection built in.  
-- **Conversational memory:** Remembers context within a session for follow-up questions.  
+- **Conversational memory:** Remembers context within a session for follow-up questions (both modes).  
 
 ---
 
@@ -93,7 +95,8 @@ Results stored in:
 
 ✅ **Backend API** (`/backend`)
 - RESTful API with `/api/debug` and `/api/assignment` endpoints
-- Conversational mode with full chat history support
+- Conversational mode with full chat history support (both endpoints)
+- **Difficulty level support**: Tailors responses to beginner/intermediate/advanced levels
 - Azure OpenAI integration with prompt management
 - Azure AI Content Safety integration
 - Rate limiting (20 requests/minute per IP)
@@ -105,11 +108,15 @@ Results stored in:
 - Modern React + TypeScript chat interface
 - Dark mode design with Learning-First.ai branding
 - Unified chatbox (no separate code/question fields)
-- Conversation memory within sessions
+- **Mode selector**: Choose between Debug and Assignment modes
+- **Difficulty level customization**: Beginner, Intermediate, Advanced
+- Conversation memory within sessions (both modes)
 - Auto-resizing input
 - Loading states and error handling
 - Metadata stripping (developer info hidden from users)
 - Session management (New Chat button)
+- Mobile-responsive design (works across all platforms)
+- Enhanced UX with tooltips and clear mode descriptions
 
 ✅ **Security & Production Features**
 - Rate limiting to prevent abuse
@@ -225,7 +232,7 @@ edu-ai-debug-assistant/
 ## API Endpoints
 
 ### POST `/api/debug`
-Conversational debug assistance with chat history.
+Conversational debug assistance with chat history and difficulty customization.
 
 **Request:**
 ```json
@@ -234,7 +241,8 @@ Conversational debug assistance with chat history.
   "history": [
     { "role": "user", "content": "def find_max(arr):..." },
     { "role": "assistant", "content": "The issue is..." }
-  ]
+  ],
+  "difficulty": "beginner" | "intermediate" | "advanced" (optional)
 }
 ```
 
@@ -247,7 +255,36 @@ Conversational debug assistance with chat history.
 ```
 
 ### POST `/api/assignment`
-Assignment help (conceptual guidance only).
+Assignment help (conceptual guidance only) with conversational history and difficulty customization.
+
+**Request:**
+```json
+{
+  "message": "How do I approach this problem?",
+  "history": [
+    { "role": "user", "content": "I need to..." },
+    { "role": "assistant", "content": "Start by..." }
+  ],
+  "difficulty": "beginner" | "intermediate" | "advanced" (optional)
+}
+```
+
+**Legacy format (also supported):**
+```json
+{
+  "question": "string (required)",
+  "code": "string (optional)",
+  "difficulty": "beginner" | "intermediate" | "advanced" (optional)
+}
+```
+
+**Response:**
+```json
+{
+  "content": "Conceptual guidance tailored to difficulty level...",
+  "metadata": { "safety_decision": "allow", ... }
+}
+```
 
 See `/backend/README.md` for full API documentation.
 

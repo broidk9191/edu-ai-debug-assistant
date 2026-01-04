@@ -90,16 +90,17 @@ npm start
 
 ### POST `/api/debug`
 
-Debug code and get learning-focused hints. Supports conversational history.
+Debug code and get learning-focused hints. Supports conversational history and difficulty level customization.
 
-**Request Body:**
+**Request Body (Conversational Mode):**
 ```json
 {
   "message": "string - Current user message",
   "history": [
     { "role": "user", "content": "previous message" },
     { "role": "assistant", "content": "previous response" }
-  ]
+  ],
+  "difficulty": "beginner" | "intermediate" | "advanced" (optional, default: "intermediate")
 }
 ```
 
@@ -109,14 +110,15 @@ Debug code and get learning-focused hints. Supports conversational history.
   "code": "string (optional)",
   "errorMessage": "string (optional)",
   "testCase": "string (optional)",
-  "question": "string (optional)"
+  "question": "string (optional)",
+  "difficulty": "beginner" | "intermediate" | "advanced" (optional)
 }
 ```
 
 **Response:**
 ```json
 {
-  "content": "string - AI response with hints and guidance",
+  "content": "string - AI response with hints and guidance (tailored to difficulty level)",
   "metadata": {
     "safety_decision": "allow" | "refuse" | "review_required",
     "diagnosis_confidence": "low" | "medium" | "high",
@@ -125,27 +127,50 @@ Debug code and get learning-focused hints. Supports conversational history.
 }
 ```
 
+**Difficulty Levels:**
+- `beginner`: Simple language, more context, explicit hints, analogies
+- `intermediate`: Standard terminology, balanced hints, moderate context
+- `advanced`: Technical language, subtle hints, minimal context, advanced concepts
+
 ### POST `/api/assignment`
 
-Get assignment help (conceptual guidance, no code solutions).
+Get assignment help (conceptual guidance, no code solutions). Supports conversational history and difficulty level customization.
 
-**Request Body:**
+**Request Body (Conversational Mode):**
+```json
+{
+  "message": "string - Current user message",
+  "history": [
+    { "role": "user", "content": "previous message" },
+    { "role": "assistant", "content": "previous response" }
+  ],
+  "difficulty": "beginner" | "intermediate" | "advanced" (optional, default: "intermediate")
+}
+```
+
+**Legacy format (also supported):**
 ```json
 {
   "question": "string (required)",
-  "code": "string (optional)"
+  "code": "string (optional)",
+  "difficulty": "beginner" | "intermediate" | "advanced" (optional)
 }
 ```
 
 **Response:**
 ```json
 {
-  "content": "string - Conceptual guidance or refusal",
+  "content": "string - Conceptual guidance tailored to difficulty level",
   "metadata": {
     "safety_decision": "allow" | "refuse" | "review_required"
   }
 }
 ```
+
+**Difficulty Levels:**
+- `beginner`: Very simple language, lots of context, explicit hints, analogies
+- `intermediate`: Standard terminology, balanced hints, moderate context
+- `advanced`: Precise technical language, subtle hints, minimal context, advanced topics
 
 ### GET `/`
 
@@ -164,7 +189,9 @@ Health check endpoint (not rate limited).
 - ✅ Azure OpenAI integration for AI responses
 - ✅ Azure AI Content Safety for misuse detection
 - ✅ Academic integrity enforcement
-- ✅ Conversational memory (multi-turn chat)
+- ✅ Conversational memory (multi-turn chat for both debug and assignment modes)
+- ✅ **Difficulty level customization** (beginner/intermediate/advanced)
+- ✅ **Dynamic prompt adjustment** based on user's learning level
 - ✅ Rate limiting (20 req/min per IP)
 - ✅ CORS protection
 - ✅ Request size limits
