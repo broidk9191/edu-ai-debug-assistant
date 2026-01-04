@@ -3,9 +3,20 @@ export interface ChatMessage {
   content: string;
 }
 
+export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
+
+export type ChatMode = 'debug' | 'assignment';
+
 export interface DebugRequest {
   message: string;
   history: ChatMessage[];
+  difficulty?: DifficultyLevel;
+}
+
+export interface AssignmentRequest {
+  message: string;
+  history: ChatMessage[];
+  difficulty?: DifficultyLevel;
 }
 
 export interface DebugResponse {
@@ -42,6 +53,30 @@ function stripMetadata(content: string): string {
 
 export async function sendMessage(request: DebugRequest): Promise<DebugResponse> {
   const response = await fetch(`${API_BASE_URL}/debug`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || errorData.error || 'Failed to get response');
+  }
+
+  const data = await response.json();
+  
+  // Strip any developer metadata from the response before showing to users
+  const cleanContent = stripMetadata(data.content || '');
+  
+  return {
+    content: cleanContent,
+  };
+}
+
+export async function sendAssignmentMessage(request: AssignmentRequest): Promise<DebugResponse> {
+  const response = await fetch(`${API_BASE_URL}/assignment`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -1,30 +1,50 @@
 import { Router, Request, Response } from "express";
 import {
   generateAssignmentResponse,
+  generateConversationalAssignmentResponse,
   AssignmentRequest,
+  ChatMessage,
 } from "../services/openai";
 import { checkContentSafety, checkAcademicMisuse } from "../services/contentSafety";
 
 const router = Router();
 
+type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
+
+interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 interface AssignmentRequestBody {
-  question: string;
+  // Legacy single-turn fields
+  question?: string;
   code?: string;
+  // New conversational fields
+  message?: string;
+  history?: ConversationMessage[];
+  difficulty?: DifficultyLevel;
 }
 
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { question, code }: AssignmentRequestBody = req.body;
+    const { question, code, message, history, difficulty }: AssignmentRequestBody = req.body;
 
+    // Determine if this is a conversational request or legacy request
+    const isConversational = message !== undefined;
+    
+    // Get the current user input
+    const currentInput = isConversational ? message : question;
+    
     // Validate input
-    if (!question) {
+    if (!currentInput) {
       return res.status(400).json({
-        error: "'question' field is required",
+        error: "A message or question must be provided",
       });
     }
 
     // Check content safety (required)
-    const userInput = code ? `${question}\n\n${code}` : question;
+    const userInput = code ? `${currentInput}\n\n${code}` : currentInput;
     
     let safetyResult;
     try {
@@ -55,15 +75,25 @@ Try breaking down the problem yourself, run test cases, and use online resources
       });
     }
 
-    // Generate assignment help response
-    const request: AssignmentRequest = {
-      question,
-      ...(code && { code }),
-    };
-
     let response;
     try {
-      response = await generateAssignmentResponse(request);
+      if (isConversational) {
+        // Use conversational mode with history
+        const conversationHistory: ChatMessage[] = (history || []).map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        }));
+        
+        response = await generateConversationalAssignmentResponse(message!, conversationHistory, difficulty || 'intermediate');
+      } else {
+        // Legacy single-turn mode
+        const request: AssignmentRequest = {
+          question: question!,
+          ...(code && { code }),
+          difficulty: difficulty || 'intermediate',
+        };
+        response = await generateAssignmentResponse(request);
+      }
     } catch (err: any) {
       console.error('AI service error while generating assignment response:', err);
       return res.json({
@@ -79,6 +109,8 @@ Try breaking down the problem yourself, run test cases, and use online resources
     // Log safety decision for audit
     console.log("Assignment request processed:", {
       safety_decision: response.metadata.safety_decision,
+      is_conversational: isConversational,
+      history_length: history?.length || 0,
       has_code: !!code,
       timestamp: new Date().toISOString(),
     });
