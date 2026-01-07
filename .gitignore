@@ -108,3 +108,84 @@ secrets/
 *.bak
 *.backup
 *~
+
+# Deployment platforms
+.vercel/
+.railway/
+.netlify/
+.vercelignore
+railway.json
+vercel.json
+netlify.toml
+
+# Package manager lock files (optional - some teams commit these)
+# Uncomment if you want to ignore lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# TypeScript incremental build info
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Turbo (monorepo tool)
+.turbo/
+
+# Next.js (if you migrate in future)
+.next/
+out/
+
+# Storybook
+storybook-static/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+.cypress/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Jest
+.jest/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Python (if you add Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb
+
+# Local configuration overrides
+config.local.*
+settings.local.*
+
+# Sentry
+.sentryclirc
+
+# Misc
+.DS_Store
+*.suo
+*.user
+*.userosscache
+*.sln.docstates

@@ -98,3 +98,111 @@ export async function sendAssignmentMessage(request: AssignmentRequest): Promise
     content: cleanContent,
   };
 }
+
+// Authentication API functions
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
+export async function login(email: string, password: string): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Login failed');
+  }
+
+  const data = await response.json();
+  return {
+    token: data.token,
+    user: data.user,
+  };
+}
+
+export async function register(email: string, password: string, name: string): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password, name }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Registration failed');
+  }
+
+  const data = await response.json();
+  return {
+    token: data.token,
+    user: data.user,
+  };
+}
+
+export async function getCurrentUser(token: string): Promise<{ id: string; email: string; name: string }> {
+  // For MVP, we'll decode the JWT token on the client side
+  // In production, you might want a /auth/me endpoint that validates the token server-side
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      id: payload.id,
+      email: payload.email,
+      name: payload.name,
+    };
+  } catch (error) {
+    throw new Error('Invalid token');
+  }
+}
+
+export interface GoogleAuthResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+}
+
+export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/google`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ idToken }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Google authentication failed');
+  }
+
+  const data = await response.json();
+  return {
+    token: data.token,
+    user: data.user,
+  };
+}
