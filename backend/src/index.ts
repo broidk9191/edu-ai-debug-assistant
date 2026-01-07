@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import debugRouter from "./routes/debug";
 import assignmentRouter from "./routes/assignment";
+import authRouter from "./routes/auth";
 import { validateContentSafetyConfig } from "./services/contentSafety";
 
 dotenv.config();
@@ -111,6 +112,7 @@ app.get("/", (req, res) => {
     status: "running",
     version: "1.0.0",
     endpoints: {
+      auth: "/api/auth",
       debug: "/api/debug",
       assignment: "/api/assignment"
     }
@@ -118,6 +120,7 @@ app.get("/", (req, res) => {
 });
 
 // API routes
+app.use("/api/auth", authRouter);
 app.use("/api/debug", debugRouter);
 app.use("/api/assignment", assignmentRouter);
 
