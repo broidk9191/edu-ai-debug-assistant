@@ -32,8 +32,9 @@
   opacity: 0.8;
 }
 
-.logo-icon {
-  font-size: 2rem;
+.auth-logo-img {
+  height: 32px;
+  width: auto;
 }
 
 .auth-card {

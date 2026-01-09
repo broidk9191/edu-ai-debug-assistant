@@ -46,6 +46,9 @@ body {
 .sidebar.closed {
   width: 0;
   transform: translateX(-100%);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sidebar-header {
@@ -61,6 +64,11 @@ body {
   gap: 0.5rem;
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+.sidebar-logo-img {
+  height: 24px;
+  width: auto;
 }
 
 .toggle-sidebar {
@@ -105,6 +113,58 @@ body {
 
 .new-session-btn span {
   font-size: 1.2rem;
+}
+
+.sessions-list {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+}
+
+.session-item {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: 1px solid transparent;
+}
+
+.session-item:hover {
+  background: var(--sidebar-hover);
+}
+
+.session-item.active {
+  background: rgba(16, 163, 127, 0.15);
+  border: 1px solid rgba(16, 163, 127, 0.3);
+}
+
+.session-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ececec;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #676767;
+}
+
+.session-mode {
+  font-size: 0.875rem;
+}
+
+.session-messages {
+  font-size: 0.7rem;
 }
 
 .current-session {
@@ -258,6 +318,12 @@ body {
   justify-content: space-between;
   align-items: center;
   background: var(--main-bg);
+  height: 64px;
+  transition: padding-left 0.2s ease;
+}
+
+.sidebar-closed .chat-header {
+  padding-left: 6rem; /* Space for the "Menu" button when sidebar is closed */
 }
 
 .header-info h2 {
@@ -488,6 +554,89 @@ body {
   padding: 0;
 }
 
+.message-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.message-section {
+  margin-bottom: 1.5rem;
+}
+
+.message-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #4a4a4a;
+  display: block;
+  width: 100%;
+  text-transform: capitalize;
+}
+
+.message-text-content {
+  line-height: 1.6;
+  font-size: 1rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.message-text-content strong {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.code-editor-container {
+  margin: 0.5rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #383838;
+  background: #1e1e1e;
+}
+
+.code-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: #252526;
+  border-bottom: 1px solid #383838;
+}
+
+.code-language {
+  font-size: 0.75rem;
+  color: #858585;
+  text-transform: uppercase;
+  font-weight: 500;
+  font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+.copy-code-btn {
+  background: transparent;
+  border: none;
+  color: #858585;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copy-code-btn:hover {
+  background: #383838;
+  color: #ececec;
+}
+
 .code-block {
   background: #000000;
   border-radius: 8px;
@@ -580,8 +729,10 @@ body {
 }
 
 .send-btn {
-  width: 32px;
+  width: auto;
+  min-width: 60px;
   height: 32px;
+  padding: 0 12px;
   border-radius: 8px;
   border: none;
   display: flex;
@@ -589,7 +740,8 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
   flex-shrink: 0;
 }
 
@@ -671,7 +823,7 @@ body {
   /* Header: smaller padding and font sizes */
   .chat-header {
     padding: 0.75rem 1rem;
-    padding-left: 3.5rem; /* Space for the floating toggle */
+    padding-left: 5rem; /* Space for the floating "Menu" toggle */
     flex-wrap: wrap;
     gap: 0.5rem;
   }
@@ -808,6 +960,25 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 
+  .code-editor-container {
+    margin: 0.5rem 0;
+    border-radius: 6px;
+  }
+
+  .code-editor-header {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
+  }
+
+  .code-language {
+    font-size: 0.65rem;
+  }
+
+  .copy-code-btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+
   /* Overlay when sidebar is open on mobile */
   .sidebar-overlay {
     position: fixed;
@@ -821,7 +992,7 @@ body {
   }
 
   /* Floating toggle button when sidebar is closed */
-  .mobile-toggle {
+.mobile-toggle {
     display: flex;
     position: fixed;
     top: 0.75rem;
@@ -830,13 +1001,45 @@ body {
     background: var(--sidebar-bg);
     border: 1px solid var(--border-color);
     color: white;
-    width: 40px;
+    width: auto;
+    min-width: 40px;
     height: 40px;
+    padding: 0 10px;
     border-radius: 8px;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
   }
+}
+
+/* Desktop toggle button (when sidebar is closed) */
+.desktop-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1001;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
+  color: white;
+  width: auto;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+}
+
+.desktop-toggle:hover {
+  background: var(--sidebar-hover);
 }
 
 /* Hide mobile toggle on desktop */
@@ -857,5 +1060,232 @@ body {
   
   .message-wrapper {
     padding: 1.25rem 0.75rem;
+  }
+}
+
+/* Workspace View */
+.workspace-container {
+  display: flex;
+  height: calc(100vh - 64px); /* Subtract header height */
+  width: 100%;
+  background: var(--main-bg);
+  overflow: hidden;
+}
+
+.workspace-editor-pane {
+  flex: 1.5;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-color);
+  min-width: 0;
+}
+
+.workspace-chat-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  background: var(--chat-bg);
+}
+
+.workspace-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #252526;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toolbar-btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: #333;
+  color: white;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background: #444;
+  border-color: #555;
+}
+
+.toolbar-btn.debug:hover:not(:disabled) {
+  background: rgba(16, 163, 127, 0.2);
+  border-color: #10a37f;
+}
+
+.toolbar-btn.test:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #6366f1;
+}
+
+.toolbar-btn.feature:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.language-select {
+  background: #333;
+  color: white;
+  border: 1px solid var(--border-color);
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.toolbar-btn.run:hover:not(:disabled) {
+  background: rgba(16, 163, 127, 0.2);
+  border-color: #10a37f;
+  color: #10a37f;
+}
+
+.workspace-editor-terminal-split {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-wrapper {
+  flex: 2; /* Editor gets more space */
+  width: 100%;
+  overflow: hidden;
+}
+
+.terminal-wrapper {
+  flex: 1; /* Terminal gets some space */
+  background: #1e1e1e;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.terminal-header {
+  padding: 0.5rem 1rem;
+  background: #252526;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #858585;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.clear-terminal-btn {
+  background: transparent;
+  border: none;
+  color: #858585;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.clear-terminal-btn:hover {
+  background: #333;
+  color: white;
+}
+
+.terminal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+  color: #d4d4d4;
+}
+
+.terminal-line {
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.terminal-line:first-child {
+  color: #10a37f;
+}
+
+.workspace-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.workspace-chat-input {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.workspace-chat-input textarea {
+  width: 100%;
+  background: #333;
+  color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  resize: none;
+  outline: none;
+}
+
+.workspace-welcome {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.workspace-welcome h3 {
+  color: var(--text-main);
+  margin-bottom: 1rem;
+}
+
+.workspace-welcome ul {
+  text-align: left;
+  margin-top: 1.5rem;
+  list-style: none;
+  padding: 0;
+}
+
+.workspace-welcome li {
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 1024px) {
+  .workspace-container {
+    flex-direction: column;
+  }
+  
+  .workspace-editor-pane {
+    flex: 1;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .workspace-chat-pane {
+    flex: 1;
   }
 }

@@ -1,0 +1,8 @@
+{
+  "content": "I can't provide a full corrected solution for an assignment, but I can help you learn to fix it.\n\nTo help you learn, try these steps: (1) point me to the smallest failing function or error message; (2) run a short experiment (I can suggest one) that isolates the issue; (3) ask for a progressively more specific hint if needed.\n\nIf you share the failing function and the error trace, I'll give a targeted hint focusing on the single failing line.",
+  "metadata": {
+    "safety_decision": "refuse",
+    "diagnosis_confidence": "low",
+    "hint_level": 1
+  }
+}

@@ -49,7 +49,7 @@ export default function Login() {
       <div className="auth-container">
         <div className="auth-header">
           <Link to="/" className="auth-logo">
-            <span className="logo-icon">📚</span>
+            <img src="/logo.png" alt="Learning-First.ai Logo" className="auth-logo-img" />
             <span>Learning-First.ai</span>
           </Link>
         </div>

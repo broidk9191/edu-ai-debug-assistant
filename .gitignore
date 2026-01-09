@@ -10,6 +10,7 @@ frontend/dist/
 backend/dist/
 *.tsbuildinfo
 .tsbuildinfo
+tsconfig.tsbuildinfo
 
 # Environment variables (exclude all except examples)
 .env
@@ -40,17 +41,21 @@ lerna-debug.log*
 logs/
 *.log.*
 
-# Test outputs
-backend/frontend_example/
-backend/scripts/
-test_outputs/
-backend/test_outputs/
+# Test and Coverage
 coverage/
 .nyc_output/
 *.lcov
+test-results/
+playwright-report/
+playwright/.cache/
+cypress/videos/
+cypress/screenshots/
+.cypress/
+.jest/
 
 # Editor / IDE
 .vscode/
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
@@ -69,10 +74,9 @@ coverage/
 .Trashes
 ehthumbs.db
 Thumbs.db
-*.DS_Store
 desktop.ini
 
-# Cache
+# Cache and temporary files
 .cache/
 .parcel-cache/
 .vite/
@@ -80,8 +84,12 @@ vite.config.*.timestamp-*
 .npm/
 .eslintcache
 .stylelintcache
+*.tmp
+*.temp
+*.bak
+*.backup
 
-# Secrets and keys (extra safety)
+# Secrets and keys
 *.key
 *.pem
 *.p12
@@ -98,58 +106,15 @@ secrets/
 .aws/
 *.credentials
 
-# Local development
-.local/
-.localhost/
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.backup
-*~
-
 # Deployment platforms
 .vercel/
 .railway/
 .netlify/
 .vercelignore
-railway.json
-vercel.json
-netlify.toml
-
-# Package manager lock files (optional - some teams commit these)
-# Uncomment if you want to ignore lock files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# TypeScript incremental build info
-*.tsbuildinfo
-tsconfig.tsbuildinfo
-
-# Turbo (monorepo tool)
-.turbo/
-
-# Next.js (if you migrate in future)
-.next/
-out/
-
-# Storybook
-storybook-static/
-
-# Cypress
-cypress/videos/
-cypress/screenshots/
-.cypress/
-
-# Playwright
-test-results/
-playwright-report/
-playwright/.cache/
-
-# Jest
-.jest/
+# Keep configuration files if needed for CI/CD
+# railway.json
+# vercel.json
+# netlify.toml
 
 # Database files
 *.db
@@ -161,7 +126,7 @@ playwright/.cache/
 .dockerignore
 docker-compose.override.yml
 
-# Python (if you add Python scripts)
+# Python support
 __pycache__/
 *.py[cod]
 *$py.class
@@ -171,21 +136,16 @@ venv/
 env/
 ENV/
 .venv
-
-# Jupyter Notebooks
 .ipynb_checkpoints
 *.ipynb
 
-# Local configuration overrides
-config.local.*
-settings.local.*
-
-# Sentry
-.sentryclirc
-
 # Misc
-.DS_Store
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+.next/
+out/
+storybook-static/
+.turbo/
+.sentryclirc

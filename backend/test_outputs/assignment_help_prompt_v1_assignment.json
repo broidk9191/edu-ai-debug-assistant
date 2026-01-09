@@ -1,0 +1,6 @@
+{
+  "content": "I can't provide help with completing assignments or writing code for you.\n\nThis ensures you learn by debugging your own code and maintain academic integrity.\n\nFor debugging specific bugs in your code, use the debug mode: share your code snippet and error, then ask for hints.\n\nTry breaking down the problem yourself, run test cases, and use online resources for concepts (not solutions).",
+  "metadata": {
+    "safety_decision": "refuse"
+  }
+}
