@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import debugRouter from "./routes/debug";
 import assignmentRouter from "./routes/assignment";
 import authRouter from "./routes/auth";
+import workspaceRouter from "./routes/workspace";
 import { validateContentSafetyConfig } from "./services/contentSafety";
 
 dotenv.config();
@@ -113,8 +114,8 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     endpoints: {
       auth: "/api/auth",
-      debug: "/api/debug",
-      assignment: "/api/assignment"
+      assignment: "/api/assignment",
+      workspace: "/api/workspace"
     }
   });
 });
@@ -123,6 +124,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/debug", debugRouter);
 app.use("/api/assignment", assignmentRouter);
+app.use("/api/workspace", workspaceRouter);
 
 // =============================================================================
 // Error Handling
@@ -149,8 +151,8 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 const HOST = process.env.HOST || "0.0.0.0";
 app.listen(PORT, HOST, () => {
   console.log(`🚀 Server running at http://${HOST}:${PORT}`);
-  console.log(`📝 Debug endpoint: http://${HOST}:${PORT}/api/debug`);
   console.log(`📚 Assignment endpoint: http://${HOST}:${PORT}/api/assignment`);
+  console.log(`✨ Workspace endpoint: http://${HOST}:${PORT}/api/workspace`);
   console.log(`🔒 CORS allowed origins: ${allowedOrigins.join(", ")}`);
   console.log(`⏱️  Rate limit: 20 requests per minute per IP`);
 });

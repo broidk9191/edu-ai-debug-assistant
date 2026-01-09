@@ -5,7 +5,16 @@ export interface ChatMessage {
 
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';
 
-export type ChatMode = 'debug' | 'assignment';
+export type ChatMode = 'assignment' | 'workspace';
+
+export interface WorkspaceRequest {
+  code: string;
+  language: string;
+  message: string;
+  history: ChatMessage[];
+  difficulty?: DifficultyLevel;
+  action?: 'debug' | 'test' | 'feature' | 'chat';
+}
 
 export interface DebugRequest {
   message: string;
@@ -92,6 +101,28 @@ export async function sendAssignmentMessage(request: AssignmentRequest): Promise
   const data = await response.json();
   
   // Strip any developer metadata from the response before showing to users
+  const cleanContent = stripMetadata(data.content || '');
+  
+  return {
+    content: cleanContent,
+  };
+}
+
+export async function sendWorkspaceMessage(request: WorkspaceRequest): Promise<DebugResponse> {
+  const response = await fetch(`${API_BASE_URL}/workspace`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || errorData.error || 'Failed to get workspace response');
+  }
+
+  const data = await response.json();
   const cleanContent = stripMetadata(data.content || '');
   
   return {

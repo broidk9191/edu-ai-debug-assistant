@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import './App.css';
-import { sendMessage, sendAssignmentMessage, ChatMessage as ApiChatMessage, DifficultyLevel, ChatMode } from './services/api';
+import { sendMessage, sendAssignmentMessage, sendWorkspaceMessage, ChatMessage as ApiChatMessage, DifficultyLevel, ChatMode } from './services/api';
+import MessageContent from './components/MessageContent';
+import WorkspaceView from './components/WorkspaceView';
 
 interface ChatMessage {
   id: string;
@@ -10,16 +12,32 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  mode: ChatMode;
+  difficulty: DifficultyLevel;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 function ChatApp() {
   const { user, logout } = useAuth();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('intermediate');
-  const [chatMode, setChatMode] = useState<ChatMode>('debug');
+  const [chatMode, setChatMode] = useState<ChatMode>('workspace');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Get current session
+  const currentSession = sessions.find(s => s.id === currentSessionId);
+  const messages = currentSession?.messages || [];
 
   // Close sidebar on small screens when a message is sent
   const handleMobileSidebarClose = () => {
@@ -39,7 +57,9 @@ function ChatApp() {
   // Handle window resize for sidebar
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 768) {
+      const isDesktopWidth = window.innerWidth > 768;
+      setIsDesktop(isDesktopWidth);
+      if (isDesktopWidth) {
         setSidebarOpen(true);
       } else {
         setSidebarOpen(false);
@@ -58,45 +78,102 @@ function ChatApp() {
     }
   }, [input]);
 
-  const handleSubmit = async () => {
-    if (!input.trim() || loading) return;
+  const handleSubmit = async (customInput?: string, customAction?: 'debug' | 'test' | 'feature' | 'chat' | 'execute', customLanguage?: string): Promise<string | undefined> => {
+    const finalInput = customInput || input.trim();
+    if (!finalInput && !customInput) return;
+    if (loading) return;
+
+    // Create new session if none exists
+    let sessionId = currentSessionId;
+    if (!sessionId) {
+      const newSession: ChatSession = {
+        id: Date.now().toString(),
+        title: 'New Chat',
+        messages: [],
+        mode: chatMode,
+        difficulty: difficulty,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      setSessions(prev => [newSession, ...prev]);
+      sessionId = newSession.id;
+      setCurrentSessionId(sessionId);
+    }
 
     handleMobileSidebarClose();
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input.trim(),
-      timestamp: new Date(),
-    };
+    // Only add to history if not a background execution action
+    if (customAction !== 'execute') {
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: finalInput,
+        timestamp: new Date(),
+      };
 
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
-    const currentInput = input.trim();
-    setInput('');
+      // Update session with user message
+      setSessions(prev => prev.map(s => {
+        if (s.id === sessionId) {
+          const updatedMessages = [...s.messages, userMessage];
+          // Generate title from first message if it's new
+          const newTitle = s.messages.length === 0 
+            ? (finalInput.length > 50 ? finalInput.substring(0, 50) + '...' : finalInput)
+            : s.title;
+          return {
+            ...s,
+            messages: updatedMessages,
+            title: newTitle,
+            mode: chatMode,
+            difficulty: difficulty,
+            updatedAt: new Date(),
+          };
+        }
+        return s;
+      }));
+    }
+
+    const currentInput = finalInput;
+    if (!customInput) setInput('');
+    
     setLoading(true);
 
     try {
       // Build conversation history for the backend
-      const history: ApiChatMessage[] = messages.map(m => ({
+      const history: ApiChatMessage[] = (sessions.find(s => s.id === sessionId)?.messages || []).map(m => ({
         role: m.role,
         content: m.content,
       }));
 
       // Send the message to the appropriate endpoint based on mode
       let response;
-      if (chatMode === 'debug') {
-        response = await sendMessage({
-          message: currentInput,
-          history: history,
-          difficulty: difficulty,
-        });
-      } else {
+      if (chatMode === 'assignment') {
         // Assignment mode - send message with conversation history
         response = await sendAssignmentMessage({
           message: currentInput,
           history: history,
           difficulty: difficulty,
+        });
+      } else {
+        // Workspace mode
+        // Extract code from the customInput if it's an action
+        let code = '';
+        let actualMessage = currentInput;
+        
+        if (customAction && customAction !== 'chat') {
+          const codeMatch = currentInput.match(/Code:\n([\s\S]*)$/);
+          if (codeMatch) {
+            code = codeMatch[1];
+            actualMessage = `Please ${customAction} this code.`;
+          }
+        }
+
+        response = await sendWorkspaceMessage({
+          code: code,
+          language: customLanguage || 'javascript',
+          message: actualMessage,
+          history: history,
+          difficulty: difficulty,
+          action: (customAction as any) || 'chat'
         });
       }
       
@@ -107,7 +184,21 @@ function ChatApp() {
         timestamp: new Date(),
       };
       
-      setMessages(prev => [...prev, assistantMessage]);
+      // Update session with assistant message (if not execute action)
+      if (customAction !== 'execute') {
+        setSessions(prev => prev.map(s => {
+          if (s.id === sessionId) {
+            return {
+              ...s,
+              messages: [...s.messages, assistantMessage],
+              updatedAt: new Date(),
+            };
+          }
+          return s;
+        }));
+      }
+
+      return response.content;
     } catch (err: any) {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -115,30 +206,68 @@ function ChatApp() {
         content: `I encountered an error: ${err.message || 'Connection failed'}. Please check if the backend server is running.`,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      
+      // Update session with error message (if not execute action)
+      if (customAction !== 'execute') {
+        setSessions(prev => prev.map(s => {
+          if (s.id === sessionId) {
+            return {
+              ...s,
+              messages: [...s.messages, errorMessage],
+              updatedAt: new Date(),
+            };
+          }
+          return s;
+        }));
+      }
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
+  // Create a new chat session
   const handleNewChat = () => {
-    setMessages([]);
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      title: 'New Chat',
+      messages: [],
+      mode: chatMode,
+      difficulty: difficulty,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setSessions(prev => [newSession, ...prev]);
+    setCurrentSessionId(newSession.id);
     setInput('');
     handleMobileSidebarClose();
   };
 
+  // Switch to a different session
+  const handleSwitchSession = (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setCurrentSessionId(sessionId);
+      setChatMode(session.mode);
+      setDifficulty(session.difficulty);
+      setInput('');
+      handleMobileSidebarClose();
+    }
+  };
+
+
   const handleModeChange = (newMode: ChatMode) => {
     if (newMode !== chatMode) {
-      // Warn user if they have messages and are switching modes
-      if (messages.length > 0) {
-        const confirmSwitch = window.confirm(
-          `Switching to ${newMode === 'debug' ? 'Debug' : 'Assignment'} mode will clear your current conversation. Continue?`
-        );
-        if (!confirmSwitch) return;
+      // Update current session mode if it exists
+      if (currentSessionId) {
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentSessionId) {
+            return { ...s, mode: newMode };
+          }
+          return s;
+        }));
       }
       setChatMode(newMode);
-      setMessages([]);
-      setInput('');
     }
   };
 
@@ -157,15 +286,22 @@ function ChatApp() {
 
   return (
     <div className="app-layout">
+      {/* Desktop Toggle Button (when sidebar is closed) */}
+      {!isSidebarOpen && isDesktop && (
+        <button className="desktop-toggle" onClick={() => setSidebarOpen(true)} title="Open sidebar">
+          Menu
+        </button>
+      )}
+
       {/* Mobile Toggle Button */}
-      {!isSidebarOpen && (
+      {!isSidebarOpen && !isDesktop && (
         <button className="mobile-toggle" onClick={() => setSidebarOpen(true)}>
-          ☰
+          Menu
         </button>
       )}
 
       {/* Sidebar Overlay (Mobile only) */}
-      {isSidebarOpen && window.innerWidth <= 768 && (
+      {isSidebarOpen && !isDesktop && (
         <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>
       )}
 
@@ -173,26 +309,36 @@ function ChatApp() {
       <aside className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <div className="logo">
-            <span className="logo-icon">🛡️</span>
+            <img src="/logo.png" alt="Learning-First.ai Logo" className="sidebar-logo-img" />
             <span className="logo-text">Learning-First.ai</span>
           </div>
           <button className="toggle-sidebar" onClick={() => setSidebarOpen(!isSidebarOpen)}>
-            {isSidebarOpen ? '◀' : '▶'}
+            {isSidebarOpen ? '<' : '>'}
           </button>
         </div>
         
         <nav className="sidebar-nav">
           <button className="new-session-btn" onClick={handleNewChat}>
-            <span>+</span> New Chat
+            New Chat
           </button>
           
-          {messages.length > 0 && (
-            <div className="current-session">
-              <div className="session-indicator">
-                <span className="session-dot"></span>
-                <span>Current Session</span>
-              </div>
-              <p className="message-count">{messages.length} messages</p>
+          {sessions.length > 0 && (
+            <div className="sessions-list">
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`session-item ${session.id === currentSessionId ? 'active' : ''}`}
+                  onClick={() => handleSwitchSession(session.id)}
+                >
+                  <div className="session-title">{session.title}</div>
+                  <div className="session-meta">
+                    <span className="session-mode">
+                      {session.mode === 'assignment' ? 'Assignment' : 'Workspace'}
+                    </span>
+                    <span className="session-messages">{session.messages.length} messages</span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </nav>
@@ -209,30 +355,30 @@ function ChatApp() {
       </aside>
 
       {/* Main Chat Area */}
-      <main className="chat-container">
+      <main className={`chat-container ${!isSidebarOpen ? 'sidebar-closed' : ''}`}>
         <header className="chat-header">
           <div className="header-info">
-            <h2>Learning-First.ai</h2>
+            <h2>Learning-First.ai {chatMode === 'workspace' ? '- Workspace' : ''}</h2>
           </div>
           <div className="header-controls">
             <div className="mode-selector">
               <label htmlFor="mode-select">Mode:</label>
               <div className="mode-toggle">
                 <button
-                  className={`mode-btn ${chatMode === 'debug' ? 'active' : ''}`}
-                  onClick={() => handleModeChange('debug')}
-                  disabled={loading}
-                  title="Debug mode: Get hints for fixing bugs in your code"
-                >
-                  🐛 Debug
-                </button>
-                <button
                   className={`mode-btn ${chatMode === 'assignment' ? 'active' : ''}`}
                   onClick={() => handleModeChange('assignment')}
                   disabled={loading}
                   title="Assignment mode: Get conceptual help without code solutions"
                 >
-                  📚 Assignment
+                  Assignment
+                </button>
+                <button
+                  className={`mode-btn ${chatMode === 'workspace' ? 'active' : ''}`}
+                  onClick={() => handleModeChange('workspace')}
+                  disabled={loading}
+                  title="Workspace mode: Interactive code editor with incremental building"
+                >
+                  Workspace
                 </button>
               </div>
             </div>
@@ -242,15 +388,26 @@ function ChatApp() {
                 id="difficulty-select"
                 className="difficulty-select"
                 value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as DifficultyLevel)}
+                onChange={(e) => {
+                  const newDifficulty = e.target.value as DifficultyLevel;
+                  setDifficulty(newDifficulty);
+                  // Update current session difficulty
+                  if (currentSessionId) {
+                    setSessions(prev => prev.map(s => {
+                      if (s.id === currentSessionId) {
+                        return { ...s, difficulty: newDifficulty };
+                      }
+                      return s;
+                    }));
+                  }
+                }}
                 disabled={loading}
                 title={getDifficultyDescription(difficulty)}
               >
-                <option value="beginner" title="Just starting to code? Choose this for simple explanations with lots of context.">Beginner</option>
-                <option value="intermediate" title="Have some coding experience? Choose this for balanced explanations with standard terminology.">Intermediate</option>
-                <option value="advanced" title="Experienced programmer? Choose this for concise, technical explanations.">Advanced</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
               </select>
-              <span className="difficulty-hint" title={getDifficultyDescription(difficulty)}>ℹ️</span>
             </div>
             <div className="header-badges">
               <span className="badge secure">No Full Solutions</span>
@@ -258,30 +415,26 @@ function ChatApp() {
           </div>
         </header>
 
-        <div className="messages-list">
-          {messages.length === 0 && (
+        {chatMode === 'workspace' ? (
+          <WorkspaceView
+            difficulty={difficulty}
+            loading={loading}
+            messages={messages}
+            onSendMessage={handleSubmit}
+            onNewMessage={(msg) => setInput(msg)}
+          />
+        ) : (
+          <>
+            <div className="messages-list">
+              {messages.length === 0 && (
             <div className="welcome-hero">
-              <div className="hero-icon">🛡️</div>
               <h1>Learning-First.ai</h1>
-              {chatMode === 'debug' ? (
-                <>
-                  <p>I help you debug code by explaining the "why" — not giving you the answer. Paste your code, describe your bug, or ask follow-up questions.</p>
-                  <div className="welcome-level-info">
-                    <p className="level-info-text">
-                      <strong>🐛 Debug Mode:</strong> Get hints and explanations for fixing bugs in your code. Share your code snippet and error message, and I'll guide you to understand the issue.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p>I provide conceptual help for assignments without giving code solutions. Ask about algorithms, strategies, or how to approach problems.</p>
-                  <div className="welcome-level-info">
-                    <p className="level-info-text">
-                      <strong>📚 Assignment Mode:</strong> Get high-level guidance, conceptual explanations, and problem-solving strategies. I won't provide code solutions, but I'll help you understand how to think through the problem.
-                    </p>
-                  </div>
-                </>
-              )}
+              <p>I provide conceptual help for assignments without giving code solutions. Ask about algorithms, strategies, or how to approach problems.</p>
+              <div className="welcome-level-info">
+                <p className="level-info-text">
+                  <strong>Assignment Mode:</strong> Get high-level guidance, conceptual explanations, and problem-solving strategies. I won't provide code solutions, but I'll help you understand how to think through the problem.
+                </p>
+              </div>
               <div className="welcome-level-info" style={{ marginTop: '1rem' }}>
                 <p className="level-info-text">
                   <strong>Set your learning level</strong> in the header above to get explanations tailored to your experience. 
@@ -290,70 +443,70 @@ function ChatApp() {
                 </p>
               </div>
             </div>
-          )}
-          
-          {messages.map((msg) => (
-            <div key={msg.id} className={`message-wrapper ${msg.role}`}>
-              <div className={`avatar ${msg.role}`}>
-                {msg.role === 'user' ? '👤' : '🛡️'}
-              </div>
-              <div className="message-content">
-                <div className="markdown-content">
-                  <pre className="message-text">{msg.content}</pre>
+              )}
+              
+              {            messages.map((msg) => (
+              <div key={msg.id} className={`message-wrapper ${msg.role}`}>
+                <div className={`avatar ${msg.role}`}>
+                  {msg.role === 'user' ? 'U' : 'AI'}
                 </div>
-                <span className="timestamp">
-                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-            </div>
-          ))}
-          
-          {loading && (
-            <div className="message-wrapper assistant">
-              <div className="avatar assistant">🛡️</div>
-              <div className="message-content loading-container">
-                <div className="typing-indicator">
-                  <span></span><span></span><span></span>
+                <div className="message-content">
+                    <MessageContent content={msg.content} />
+                    <span className="timestamp">
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-                <p className="loading-text">Thinking...</p>
-              </div>
+              ))}
+              
+              {loading && (
+                <div className="message-wrapper assistant">
+                  <div className="avatar assistant">AI</div>
+                  <div className="message-content loading-container">
+                    <div className="typing-indicator">
+                      <span></span><span></span><span></span>
+                    </div>
+                    <p className="loading-text">Thinking...</p>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
 
-        {/* Unified Chat Box */}
-        <footer className="input-area">
-          <div className="input-box-container">
-            <div className="chat-input-wrapper">
-              <textarea 
-                ref={textareaRef}
-                className="main-chat-input"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={chatMode === 'debug' ? "Paste your code, describe the bug, or ask a question..." : "Ask about concepts, strategies, or how to approach the problem..."}
-                rows={1}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-              />
-              <button 
-                className={`send-btn ${loading || !input.trim() ? 'disabled' : 'active'}`}
-                onClick={handleSubmit} 
-                disabled={loading || !input.trim()}
-              >
-                {loading ? <div className="mini-spinner"></div> : '↑'}
-              </button>
-            </div>
-            
-            <div className="input-footer">
-              <p>All messages in this chat share the same context. Click "New Chat" to start fresh.</p>
-            </div>
-          </div>
-        </footer>
+            {/* Unified Chat Box */}
+            <footer className="input-area">
+              <div className="input-box-container">
+                <div className="chat-input-wrapper">
+                  <textarea 
+                    ref={textareaRef}
+                    className="main-chat-input"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Ask about concepts, strategies, or how to approach the problem..."
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                  />
+                  <button 
+                    className={`send-btn ${loading || !input.trim() ? 'disabled' : 'active'}`}
+                    onClick={() => handleSubmit()} 
+                    disabled={loading || !input.trim()}
+                  >
+                    {loading ? <div className="mini-spinner"></div> : 'Send'}
+                  </button>
+                </div>
+                
+                <div className="input-footer">
+                  <p>All messages in this chat share the same context. Click "New Chat" to create a separate conversation.</p>
+                </div>
+              </div>
+            </footer>
+          </>
+        )}
       </main>
     </div>
   );

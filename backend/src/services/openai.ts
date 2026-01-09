@@ -52,6 +52,15 @@ export interface AssignmentRequest {
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
 }
 
+export interface WorkspaceRequest {
+  code: string;
+  language: string;
+  message: string;
+  history: ChatMessage[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  action: 'debug' | 'test' | 'feature' | 'chat';
+}
+
 export interface AssistantResponse {
   content: string;
   metadata: {
@@ -256,6 +265,30 @@ export async function generateConversationalResponse(
 }
 
 /**
+ * Generate workspace response
+ */
+export async function generateWorkspaceResponse(
+  request: WorkspaceRequest
+): Promise<AssistantResponse> {
+  const promptContent = loadPrompt("workspace_prompt_v1.md");
+  let systemMessage = extractSystemMessage(promptContent, "debug");
+  
+  const difficultyInstructions = getDifficultyInstructions(request.difficulty);
+  systemMessage = `${systemMessage}\n\n${difficultyInstructions}\n\nACTION: ${request.action.toUpperCase()}\nLANGUAGE: ${request.language}`;
+
+  const messages: ChatMessage[] = [
+    { role: "system", content: systemMessage },
+    ...request.history.map(m => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    })),
+    { role: "user", content: `Code:\n${request.code}\n\nMessage: ${request.message}` },
+  ];
+
+  return await callOpenAI(messages, "debug");
+}
+
+/**
  * Get difficulty-specific instructions to append to the system prompt
  */
 function getDifficultyInstructions(difficulty: 'beginner' | 'intermediate' | 'advanced'): string {
@@ -331,6 +364,13 @@ export async function generateConversationalAssignmentResponse(
   // Append difficulty-specific instructions to the system message
   const difficultyInstructions = getDifficultyInstructions(difficulty);
   systemMessage = `${systemMessage}\n\n${difficultyInstructions}`;
+  
+  // Add instruction to omit "why" explanation after first response
+  // Check if this is a follow-up (history has assistant messages)
+  const hasPreviousAssistantMessages = history.some(m => m.role === 'assistant');
+  if (hasPreviousAssistantMessages) {
+    systemMessage += `\n\nIMPORTANT: Since this is a follow-up question, do NOT include the "why" (rationale) explanation about academic integrity. The user already understands why you don't provide code. Skip directly to the guidance or refusal statement.`;
+  }
 
   // Build the full conversation: system + history + current message
   const messages: ChatMessage[] = [

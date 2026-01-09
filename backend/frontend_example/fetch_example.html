@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Fetch /api/debug example</title>
+  </head>
+  <body>
+    <h3>Call /api/debug</h3>
+    <textarea id="code" rows="6" cols="80">print("hello world")</textarea><br/>
+    <input id="question" size="80" value="Why does this print newlines?" /><br/>
+    <button id="send">Send</button>
+    <pre id="out"></pre>
+
+    <script>
+      document.getElementById('send').addEventListener('click', async () => {
+        const code = document.getElementById('code').value;
+        const question = document.getElementById('question').value;
+        const out = document.getElementById('out');
+        out.textContent = 'Sending...';
+
+        try {
+          const res = await fetch('/api/debug', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, question })
+          });
+          const data = await res.json();
+          out.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          out.textContent = 'Request failed: ' + err;
+        }
+      });
+    </script>
+  </body>
+</html>
