@@ -1,5 +1,7 @@
 # Learning-First AI Debug Assistant
 
+**Developed by Henry Lo and Dennis Wu**
+
 ## Overview
 
 The Learning-First AI Debug Assistant is an education-focused AI tool designed to help students understand programming errors and build code incrementally without directly providing full solutions. Unlike general-purpose AI tools, this system enforces learning-oriented constraints to promote critical thinking and maintain academic integrity.
@@ -478,8 +480,17 @@ These limitations are acceptable for MVP demos but should be addressed before pr
 
 ---
 
+## Contributors
+
+- **Henry Lo** - Developer
+- **Dennis Wu** - Developer
+
+---
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Copyright (c) 2024 Learning-First AI Debug Assistant  
+Copyright (c) 2024 Learning-First AI Debug Assistant
+
+Developed by **Henry Lo** and **Dennis Wu**  
